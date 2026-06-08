@@ -6,14 +6,101 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Page background uses Bohrium token */
+/* =========================================================
+   DESIGN TOKEN LAYER
+   These tokens are defined by DESIGN.md §3.
+   The imported Bohrium theme (react-abcd2/theme.css) defines
+   --color-bg-*, --color-text-*, --border-radius-* natively,
+   but does NOT define spacing, font-size, font-weight, shadow,
+   or the numbered semantic color tokens (--color-primary-N,
+   --color-warning-N, etc.).  We define them all here so every
+   var(--token) in component code resolves correctly.
+
+   Color values derived from react-abcd2/theme.css palette:
+     --primary-N    → rgb(var(--primary-N))
+     --warning-N    → rgb(var(--warning-N))   (orange ramp)
+     --danger-N     → rgb(var(--danger-N))    (red ramp)
+     --success-N    → rgb(var(--success-N))   (green ramp)
+   These raw ramp vars ARE defined by the theme, so we can
+   safely compose them here without hard-coding hex.
+   ========================================================= */
+:root {
+  /* --- Spacing (4-px grid, per DESIGN.md §3.3) --- */
+  --spacing-1:  4px;
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-5:  20px;
+  --spacing-6:  24px;
+  --spacing-7:  28px;
+  --spacing-8:  32px;
+  --spacing-9:  36px;
+  --spacing-10: 40px;
+
+  /* --- Typography — font sizes (DESIGN.md §3.2) --- */
+  --font-size-display-2: 28px;   /* mixedPronunciation — largest, core differentiator */
+  --font-size-title-2:   20px;   /* CardHeader input word */
+  --font-size-title-3:   16px;   /* Meaning main body */
+  --font-size-body-1:    14px;   /* IPA, example English, button text */
+  --font-size-body-2:    13px;   /* Example Chinese, naturalBreakdown, chinesePinyin */
+  --font-size-body-3:    12px;   /* Tips, context, translit disclaimer */
+  --font-size-caption:   12px;   /* Placeholder, example hint labels */
+
+  /* --- Typography — font weights (DESIGN.md §3.2) --- */
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* --- Elevation / shadows (DESIGN.md §3.5) --- */
+  --shadow-1: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+
+  /* --- Semantic color tokens (numbered) ---
+     Composed from the theme's raw rgb() ramp vars so they
+     automatically adapt to any future palette swap.
+     DESIGN.md §3.1 defines intended usage for each.       */
+
+  /* Primary (arcoblue ramp from theme) */
+  --color-primary-1: rgb(var(--primary-1));   /* extreme-light bg  — e.g. mixedPronunciation warm block */
+  --color-primary-2: rgb(var(--primary-2));   /* light border / accent — e.g. example left stripe */
+  --color-primary-6: rgb(var(--primary-6));   /* brand main — e.g. primary buttons, links */
+
+  /* Warning (orange ramp from theme) */
+  --color-warning-1: rgb(var(--warning-1));   /* extreme-light warm yellow bg — accent syllable bg */
+  --color-warning-6: rgb(var(--warning-6));   /* saturated orange — accent syllable text */
+
+  /* Danger (red ramp from theme) */
+  --color-danger-6:  rgb(var(--danger-6));    /* validation error text */
+
+  /* Success (green ramp from theme) */
+  --color-success-6: rgb(var(--success-6));   /* play-button icon, positive feedback */
+
+  /* Animation duration (used by card-fade-in) */
+  --transition-duration-2: 200ms;
+}
+
+/* =========================================================
+   GLOBAL BASE
+   ========================================================= */
 body {
   background-color: var(--color-bg-1);
   color: var(--color-text-1);
   min-height: 100vh;
 }
 
-/* Card result fade-in animation */
+/* =========================================================
+   PAGE LAYOUT — horizontal padding on all viewport sizes
+   so content never bleeds to the screen edge (fixes #A5/#A6)
+   ========================================================= */
+.page-outer {
+  padding-left: var(--spacing-5);
+  padding-right: var(--spacing-5);
+}
+
+/* =========================================================
+   CARD FADE-IN ANIMATION
+   ========================================================= */
 @keyframes cardFadeIn {
   from {
     opacity: 0;
@@ -29,19 +116,51 @@ body {
   animation: cardFadeIn var(--transition-duration-2, 200ms) ease-out both;
 }
 
-/* mixedPronunciation accent syllable highlight */
+/* =========================================================
+   ACCENT SYLLABLE HIGHLIGHT  (#C6)
+   Fixes: --color-warning-6 text + --color-warning-1 bg +
+          --font-weight-bold all previously resolved to empty.
+   ========================================================= */
 .accent-syllable {
   color: var(--color-warning-6);
   background-color: var(--color-warning-1);
   font-weight: var(--font-weight-bold);
-  padding: 0 2px;
+  padding: 0 3px;
   border-radius: var(--border-radius-small);
 }
 
-/* Example item left accent border */
+/* =========================================================
+   EXAMPLE ITEM CARD  (#C9)
+   Left accent border + proper inner padding.
+   ========================================================= */
 .example-item-card {
   background-color: var(--color-bg-3);
   border-radius: var(--border-radius-medium);
   border-left: 3px solid var(--color-primary-2);
   padding: var(--spacing-3);
+}
+
+/* =========================================================
+   EXAMPLE HINT HOVER  (#F2)
+   Hovering a hint span raises color to primary-6.
+   ========================================================= */
+.example-hint:hover .example-hint-text {
+  color: var(--color-primary-6);
+  text-decoration: underline;
+}
+
+/* =========================================================
+   SPEAK BUTTON  (#C10, #F4)
+   Outline style, success-color icon, 44px min touch target.
+   ========================================================= */
+.speak-button-icon {
+  color: var(--color-success-6);
+}
+
+@media (max-width: 767px) {
+  .speak-button {
+    min-height: 44px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
 }

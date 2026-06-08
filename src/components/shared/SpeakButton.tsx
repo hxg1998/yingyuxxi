@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@arco-design/web-react';
-import { IconSound, IconLoading } from '@arco-design/web-react/icon';
+import { IconPlayCircle, IconLoading } from '@arco-design/web-react/icon';
 
 interface SpeakButtonProps {
   /** The English text to speak aloud (the original user input). */
@@ -13,11 +13,14 @@ interface SpeakButtonProps {
 
 /**
  * Tap-to-listen button using the browser Web Speech API (SpeechSynthesis).
- * Reads the ORIGINAL English text aloud — works for any word/phrase/sentence,
+ * Reads the ORIGINAL English text aloud — works for any word/phrase,
  * no API key, no dictionary coverage dependency.
  *
+ * DESIGN.md §6.1: type="outline", icon=IconPlayCircle, --color-success-6 icon color.
+ * Not rendered for sentence type — the parent PronunciationModule handles that gate.
+ *
  * If the browser has no speech synthesis support, the button is not rendered
- * (no error state, consistent with the "no broken affordance" principle).
+ * (no broken affordance).
  *
  * Host app required: import '@arco-themes/react-abcd2/index.less'
  */
@@ -43,7 +46,6 @@ export default function SpeakButton({ text, size = 'small' }: SpeakButtonProps) 
   function pickEnglishVoice(): SpeechSynthesisVoice | undefined {
     const voices = window.speechSynthesis.getVoices();
     if (!voices.length) return undefined;
-    // Prefer a US English voice, then any en-* voice
     return (
       voices.find((v) => v.lang === 'en-US') ||
       voices.find((v) => v.lang?.toLowerCase().startsWith('en')) ||
@@ -53,7 +55,6 @@ export default function SpeakButton({ text, size = 'small' }: SpeakButtonProps) 
 
   function handleSpeak() {
     const synth = window.speechSynthesis;
-    // Toggle off if already speaking
     if (synth.speaking) {
       synth.cancel();
       setSpeaking(false);
@@ -62,7 +63,7 @@ export default function SpeakButton({ text, size = 'small' }: SpeakButtonProps) 
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
-    utterance.rate = 0.9; // slightly slower for learners
+    utterance.rate = 0.9;
     const voice = pickEnglishVoice();
     if (voice) utterance.voice = voice;
 
@@ -75,10 +76,20 @@ export default function SpeakButton({ text, size = 'small' }: SpeakButtonProps) 
 
   return (
     <Button
-      type="primary"
+      className="speak-button"
+      type="outline"
       shape="round"
       size={size}
-      icon={speaking ? <IconLoading /> : <IconSound />}
+      icon={
+        speaking ? (
+          <IconLoading />
+        ) : (
+          /* Apply success-6 color to the play icon via inline style on the wrapper */
+          <span className="speak-button-icon">
+            <IconPlayCircle />
+          </span>
+        )
+      }
       onClick={handleSpeak}
     >
       {speaking ? '朗读中' : '点我听'}

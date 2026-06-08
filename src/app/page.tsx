@@ -107,15 +107,15 @@ function HomePageInner() {
 
   return (
     <div
+      className="page-outer"
       style={{
         minHeight: '100vh',
         background: 'var(--color-bg-1)',
         display: 'flex',
         alignItems: isInitialState ? 'center' : 'flex-start',
         justifyContent: 'center',
-        padding: isInitialState
-          ? 'var(--spacing-10, 40px) var(--spacing-5)'
-          : 'var(--spacing-6, 24px) var(--spacing-5)',
+        paddingTop: isInitialState ? 'var(--spacing-10)' : 'var(--spacing-6)',
+        paddingBottom: isInitialState ? 'var(--spacing-10)' : 'var(--spacing-6)',
       }}
     >
       <div style={{ width: '100%', maxWidth: 680 }}>

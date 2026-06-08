@@ -12,14 +12,27 @@ interface PronunciationModuleProps {
 }
 
 /**
- * Render the pure-Chinese reading line, bolding the stressed syllable.
- * Input: readingChinese="呃-赖恩-门特", stressed="赖恩"
- * The matching syllable gets the .accent-syllable highlight; others render plain.
+ * Render the pure-Chinese reading line, highlighting the stressed syllable.
+ *
+ * Highlight rules (DESIGN.md §9):
+ *   1. Exact match with stressedSyllable string (primary rule).
+ *   2. Syllable is all-uppercase English (e.g. LINE, BACK, PRO) — auto accent.
+ *      This handles cases where the AI returns uppercase segments and the
+ *      stressedSyllable field doesn't precisely match the display form.
+ *
+ * Highlighted syllable: .accent-syllable class (--color-warning-6 text,
+ * --color-warning-1 bg, --font-weight-bold).
  */
 function renderReading(readingChinese: string, stressed: string) {
   const syllables = readingChinese.split('-');
   return syllables.map((syl, idx) => {
-    const isStressed = stressed && syl.trim() === stressed.trim();
+    const trimmed = syl.trim();
+    // Rule 1: exact match with stressedSyllable
+    const isStressedByMatch = stressed && trimmed === stressed.trim();
+    // Rule 2: segment is all-uppercase English letters (auto-accent fallback)
+    const isStressedByCase = /^[A-Z]+$/.test(trimmed);
+    const isStressed = isStressedByMatch || isStressedByCase;
+
     return (
       <span key={idx} style={{ display: 'inline-flex', alignItems: 'baseline' }}>
         {idx > 0 && (
@@ -45,12 +58,20 @@ function renderReading(readingChinese: string, stressed: string) {
 
 /**
  * Module 3 — How to say it (core differentiator).
- * Pure-Chinese reading line (largest font, warm bg) + tap-to-listen + plain-language tip.
- * English breakdown demoted to small secondary reference.
+ *
+ * Sentence type (#D1, #D2):
+ *   - No SpeakButton (AudioModule / tap-to-listen not applicable for full sentences)
+ *   - No naturalBreakdown row (not meaningful for sentence-level pronunciation)
+ *
  * Host app required: import '@arco-themes/react-abcd2/index.less'
  */
-export default function PronunciationModule({ pronunciation, speakText }: PronunciationModuleProps) {
+export default function PronunciationModule({
+  pronunciation,
+  inputType,
+  speakText,
+}: PronunciationModuleProps) {
   const { readingChinese, stressedSyllable, howToRead, naturalBreakdown } = pronunciation;
+  const isSentence = inputType === 'sentence';
 
   return (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -65,7 +86,7 @@ export default function PronunciationModule({ pronunciation, speakText }: Pronun
         怎么读
       </Typography.Text>
 
-      {/* readingChinese — core block, pure Chinese, largest font, warm bg, with listen button */}
+      {/* readingChinese core block — warm bg, largest font, optional listen button */}
       <div
         style={{
           background: 'var(--color-primary-1)',
@@ -81,7 +102,7 @@ export default function PronunciationModule({ pronunciation, speakText }: Pronun
       >
         <div
           style={{
-            fontSize: 'var(--font-size-display-2, 28px)',
+            fontSize: 'var(--font-size-display-2)',
             fontWeight: 'var(--font-weight-semibold)',
             color: 'var(--color-text-1)',
             lineHeight: 1.4,
@@ -92,10 +113,12 @@ export default function PronunciationModule({ pronunciation, speakText }: Pronun
         >
           {renderReading(readingChinese, stressedSyllable)}
         </div>
-        <SpeakButton text={speakText} />
+
+        {/* #D1: sentence type does not render SpeakButton */}
+        {!isSentence && <SpeakButton text={speakText} />}
       </div>
 
-      {/* howToRead — plain-language rhythm guidance, prominent */}
+      {/* howToRead — plain-language rhythm guidance */}
       <Typography.Text
         style={{
           fontSize: 'var(--font-size-body-2)',
@@ -107,26 +130,28 @@ export default function PronunciationModule({ pronunciation, speakText }: Pronun
         {howToRead}
       </Typography.Text>
 
-      {/* naturalBreakdown — secondary reference, small + muted */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-        <Typography.Text
-          style={{
-            fontSize: 'var(--font-size-body-3)',
-            color: 'var(--color-text-4)',
-            minWidth: 56,
-          }}
-        >
-          英文拆读
-        </Typography.Text>
-        <Typography.Text
-          style={{
-            fontSize: 'var(--font-size-body-3)',
-            color: 'var(--color-text-3)',
-          }}
-        >
-          {naturalBreakdown}
-        </Typography.Text>
-      </div>
+      {/* naturalBreakdown — secondary reference (#D2: not rendered for sentence) */}
+      {!isSentence && naturalBreakdown && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+          <Typography.Text
+            style={{
+              fontSize: 'var(--font-size-body-3)',
+              color: 'var(--color-text-4)',
+              minWidth: 56,
+            }}
+          >
+            英文拆读
+          </Typography.Text>
+          <Typography.Text
+            style={{
+              fontSize: 'var(--font-size-body-3)',
+              color: 'var(--color-text-3)',
+            }}
+          >
+            {naturalBreakdown}
+          </Typography.Text>
+        </div>
+      )}
     </Space>
   );
 }

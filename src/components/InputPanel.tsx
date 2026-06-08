@@ -139,8 +139,10 @@ export default function InputPanel({ onSubmit, isLoading, initialValue = '' }: I
         style={{ marginTop: 'var(--spacing-2)', width: '100%' }}
       >
         {EXAMPLES.map((ex) => (
+          /* .example-hint and .example-hint-text classes enable hover feedback (#F2) */
           <span
             key={ex.text}
+            className="example-hint"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-1)', cursor: 'pointer' }}
             onClick={() => handleExampleClick(ex.text)}
           >
@@ -152,10 +154,12 @@ export default function InputPanel({ onSubmit, isLoading, initialValue = '' }: I
               {ex.label}
             </Tag>
             <Typography.Text
+              className="example-hint-text"
               style={{
                 fontSize: 'var(--font-size-body-3)',
                 color: 'var(--color-text-2)',
                 cursor: 'pointer',
+                transition: 'color 150ms ease',
               }}
             >
               {ex.text}

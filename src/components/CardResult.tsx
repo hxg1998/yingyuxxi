@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, Typography, Tag, Space, Divider, Button, Tooltip } from '@arco-design/web-react';
+import { Card, Typography, Tag, Divider, Button, Tooltip } from '@arco-design/web-react';
 import { IconLink, IconCheck } from '@arco-design/web-react/icon';
 import { CardData, InputType } from '@/types/card';
 import MeaningModule from './card-modules/MeaningModule';
@@ -124,11 +124,16 @@ export default function CardResult({ data, inputType }: CardResultProps) {
         {/* Module 4: Examples */}
         <ExamplesModule examples={data.examples} />
 
-        {/* Bottom actions row */}
+        {/* Bottom actions row — flex row, share left / copy right (#C12) */}
         <Divider style={{ margin: 'var(--spacing-4) 0' }} />
-        <Space
-          style={{ width: '100%', justifyContent: 'space-between', flexWrap: 'wrap' }}
-          size={8}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            gap: 'var(--spacing-3)',
+          }}
         >
           <Tooltip content={linkCopied ? '链接已复制' : '复制分享链接'}>
             <Button
@@ -140,7 +145,7 @@ export default function CardResult({ data, inputType }: CardResultProps) {
             </Button>
           </Tooltip>
           <CopyButton cardData={data} inputType={inputType} />
-        </Space>
+        </div>
       </Card>
     </div>
   );
