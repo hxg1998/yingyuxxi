@@ -1,101 +1,164 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useCallback, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCardStore } from '@/stores/cardStore';
+import { classifyInput } from '@/lib/input-classifier';
+import { CardData, CardError } from '@/types/card';
+import InputPanel from '@/components/InputPanel';
+import CardResult from '@/components/CardResult';
+import LoadingSkeleton from '@/components/shared/LoadingSkeleton';
+import ErrorState from '@/components/shared/ErrorState';
+
+/**
+ * Inner page component — reads URL search params.
+ * Separated from the outer component so Suspense can wrap useSearchParams().
+ */
+function HomePageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const {
+    inputValue,
+    setInputValue,
+    inputType,
+    setInputType,
+    cardData,
+    setCardData,
+    isLoading,
+    setLoading,
+    error,
+    setError,
+  } = useCardStore();
+
+  // Track whether we've already triggered an auto-translate on mount for the URL q param
+  const autoTranslateTriggered = useRef(false);
+
+  /**
+   * Core translate function.
+   * Classifies input, updates URL, calls API, updates store.
+   */
+  const translate = useCallback(async (input: string) => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    const type = classifyInput(trimmed);
+    setInputValue(trimmed);
+    setInputType(type);
+    setError(null);
+
+    // Sync URL without page navigation
+    const params = new URLSearchParams();
+    params.set('q', trimmed);
+    params.set('type', type);
+    router.replace(`/?${params.toString()}`);
+
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/generate-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: trimmed, inputType: type }),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        setCardData(json.data as CardData);
+      } else {
+        setCardData(null as unknown as CardData);
+        const err: CardError = {
+          type: json.errorCode ?? 'unknown',
+          message: json.message ?? '出现了未知错误',
+          retryable: json.retryable ?? true,
+        };
+        setError(err);
+      }
+    } catch (fetchErr) {
+      console.error('[page] fetch error:', fetchErr);
+      setError({
+        type: 'network',
+        message: '网络连接中断，请检查网络后重试',
+        retryable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [router, setInputValue, setInputType, setError, setLoading, setCardData]);
+
+  // On mount: if URL has ?q=, auto-trigger translation
+  useEffect(() => {
+    if (autoTranslateTriggered.current) return;
+    const q = searchParams.get('q');
+    if (q && q.trim() && /[a-zA-Z]/.test(q)) {
+      autoTranslateTriggered.current = true;
+      translate(q.trim());
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const hasResult = !isLoading && !error && cardData;
+  const hasError = !isLoading && !!error;
+
+  // Center input vertically only when there is no result/loading/error below
+  const isInitialState = !isLoading && !error && !cardData;
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--color-bg-1)',
+        display: 'flex',
+        alignItems: isInitialState ? 'center' : 'flex-start',
+        justifyContent: 'center',
+        padding: isInitialState
+          ? 'var(--spacing-10, 40px) var(--spacing-5)'
+          : 'var(--spacing-6, 24px) var(--spacing-5)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 680 }}>
+        {/* Input panel — always visible */}
+        <InputPanel
+          onSubmit={translate}
+          isLoading={isLoading}
+          initialValue={inputValue || searchParams.get('q') || ''}
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        {/* Loading state */}
+        {isLoading && <LoadingSkeleton />}
+
+        {/* Error state */}
+        {hasError && error && (
+          <ErrorState
+            errorType={error.type}
+            onRetry={() => {
+              if (inputValue) translate(inputValue);
+            }}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+        )}
+
+        {/* Result state */}
+        {hasResult && cardData && (
+          <CardResult
+            data={cardData}
+            inputType={inputType ?? cardData.inputType}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        )}
+      </div>
     </div>
+  );
+}
+
+/**
+ * Root page — wraps inner component in Suspense as required by Next.js 14
+ * when using useSearchParams() in a Client Component.
+ */
+export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomePageInner />
+    </Suspense>
   );
 }

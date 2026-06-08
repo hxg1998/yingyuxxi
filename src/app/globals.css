@@ -1,27 +1,47 @@
+/* Arco Design base styles + Bohrium theme override (CSS fallback workflow) */
+@import '@arco-design/web-react/dist/css/arco.css';
+@import '@arco-themes/react-abcd2/theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Page background uses Bohrium token */
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg-1);
+  color: var(--color-text-1);
+  min-height: 100vh;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Card result fade-in animation */
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-fade-in {
+  animation: cardFadeIn var(--transition-duration-2, 200ms) ease-out both;
+}
+
+/* mixedPronunciation accent syllable highlight */
+.accent-syllable {
+  color: var(--color-warning-6);
+  background-color: var(--color-warning-1);
+  font-weight: var(--font-weight-bold);
+  padding: 0 2px;
+  border-radius: var(--border-radius-small);
+}
+
+/* Example item left accent border */
+.example-item-card {
+  background-color: var(--color-bg-3);
+  border-radius: var(--border-radius-medium);
+  border-left: 3px solid var(--color-primary-2);
+  padding: var(--spacing-3);
 }
