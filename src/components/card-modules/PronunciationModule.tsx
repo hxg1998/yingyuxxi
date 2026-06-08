@@ -59,9 +59,9 @@ function renderReading(readingChinese: string, stressed: string) {
 /**
  * Module 3 — How to say it (core differentiator).
  *
- * Sentence type (#D1, #D2):
- *   - No SpeakButton (AudioModule / tap-to-listen not applicable for full sentences)
- *   - No naturalBreakdown row (not meaningful for sentence-level pronunciation)
+ * All three input types (word / phrase / sentence) now render the SpeakButton.
+ * Sentence type still suppresses naturalBreakdown (#D2) — only the pronunciation
+ * button restriction is lifted (TTS API handles full sentences correctly).
  *
  * Host app required: import '@arco-themes/react-abcd2/index.less'
  */
@@ -114,8 +114,8 @@ export default function PronunciationModule({
           {renderReading(readingChinese, stressedSyllable)}
         </div>
 
-        {/* #D1: sentence type does not render SpeakButton */}
-        {!isSentence && <SpeakButton text={speakText} />}
+        {/* All three types (word / phrase / sentence) get a SpeakButton — TTS API handles sentences fine */}
+        <SpeakButton text={speakText} />
       </div>
 
       {/* howToRead — plain-language rhythm guidance */}

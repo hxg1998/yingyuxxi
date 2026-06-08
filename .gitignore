@@ -34,3 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# TTS audio cache (server-side, generated at runtime — do not commit)
+.tts-cache/

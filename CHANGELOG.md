@@ -3,6 +3,16 @@
 本项目版本号遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）：`主版本.次版本.修订号`。
 每次改动在此记录一条，并打对应的 git tag（如 `v0.2.0`）。
 
+## [0.3.0] - 2026-06-08
+
+### 新增
+- 接入 OpenAI 兼容 TTS（AiHubMix / gpt-4o-mini-tts），「点我听」升级为高质量真人级发音
+- 新增服务端 TTS 接口 `/api/tts`：以 text 的 SHA-256 hash 为 key 做磁盘缓存（`.tts-cache/`），命中缓存直接返回，不再调外部 API，节省成本
+- 单词、短语、**短句**三种类型均支持发音（解除短句的 SpeakButton 限制）
+- 降级策略：TTS API 不可用时（key 缺失、网络错误、上游故障）自动回退到浏览器内置 SpeechSynthesis，保证始终有声音
+- 前端对同一词汇缓存 objectURL，重复点击不重复发请求
+- 更新 `.env.example` 补充 TTS_* 变量说明；`.tts-cache/` 加入 `.gitignore`
+
 ## [0.2.0] - 2026-06-08
 
 ### 修复
