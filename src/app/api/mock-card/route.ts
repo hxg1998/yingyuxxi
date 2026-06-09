@@ -41,5 +41,9 @@ const MOCK_CARD: CardData = {
 };
 
 export async function GET() {
+  // Dev-only endpoint: hidden in production.
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 });
+  }
   return NextResponse.json({ success: true, data: MOCK_CARD });
 }

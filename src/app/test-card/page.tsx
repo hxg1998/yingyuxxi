@@ -5,12 +5,18 @@
  * Access at http://localhost:3000/test-card
  * Remove this page before production deployment.
  */
+import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import CardResult from '@/components/CardResult';
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton';
 import { CardData } from '@/types/card';
 
 export default function TestCardPage() {
+  // Dev-only page: hidden in production.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   const [cardData, setCardData] = useState<CardData | null>(null);
 
   useEffect(() => {
