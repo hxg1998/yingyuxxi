@@ -9,6 +9,8 @@ import InputPanel from '@/components/InputPanel';
 import CardResult from '@/components/CardResult';
 import LoadingSkeleton from '@/components/shared/LoadingSkeleton';
 import ErrorState from '@/components/shared/ErrorState';
+import AppNav from '@/components/review/AppNav';
+import { useAutoSave } from '@/lib/useAutoSave';
 
 /**
  * Inner page component — reads URL search params.
@@ -30,6 +32,8 @@ function HomePageInner() {
     error,
     setError,
   } = useCardStore();
+
+  const { saveCardToReview } = useAutoSave();
 
   // Track whether we've already triggered an auto-translate on mount for the URL q param
   const autoTranslateTriggered = useRef(false);
@@ -65,7 +69,10 @@ function HomePageInner() {
       const json = await res.json();
 
       if (json.success) {
-        setCardData(json.data as CardData);
+        const newCardData = json.data as CardData;
+        setCardData(newCardData);
+        // Auto-save to review library after successful generation
+        saveCardToReview(newCardData);
       } else {
         setCardData(null as unknown as CardData);
         const err: CardError = {
@@ -85,7 +92,7 @@ function HomePageInner() {
     } finally {
       setLoading(false);
     }
-  }, [router, setInputValue, setInputType, setError, setLoading, setCardData]);
+  }, [router, setInputValue, setInputType, setError, setLoading, setCardData, saveCardToReview]);
 
   // On mount: if URL has ?q=, auto-trigger translation
   useEffect(() => {
@@ -107,17 +114,24 @@ function HomePageInner() {
 
   return (
     <div
-      className="page-outer"
+      className="has-tab-bar"
       style={{
         minHeight: '100vh',
         background: 'var(--color-bg-1)',
-        display: 'flex',
-        alignItems: isInitialState ? 'center' : 'flex-start',
-        justifyContent: 'center',
-        paddingTop: isInitialState ? 'var(--spacing-10)' : 'var(--spacing-6)',
-        paddingBottom: isInitialState ? 'var(--spacing-10)' : 'var(--spacing-6)',
       }}
     >
+      <AppNav />
+      <div
+        className="page-outer"
+        style={{
+          display: 'flex',
+          alignItems: isInitialState ? 'center' : 'flex-start',
+          justifyContent: 'center',
+          paddingTop: isInitialState ? 'var(--spacing-10)' : 'var(--spacing-6)',
+          paddingBottom: isInitialState ? 'var(--spacing-10)' : 'var(--spacing-6)',
+          minHeight: 'calc(100vh - 56px)',
+        }}
+      >
       <div style={{ width: '100%', maxWidth: 680 }}>
         {/* Input panel — always visible */}
         <InputPanel
@@ -146,6 +160,7 @@ function HomePageInner() {
             inputType={inputType ?? cardData.inputType}
           />
         )}
+      </div>
       </div>
     </div>
   );

@@ -39,11 +39,6 @@ export interface CardData {
 
   pronunciation: PronunciationData;
 
-  translit: {
-    text: string | null;
-    disclaimer: string;
-  };
-
   examples: ExampleItem[];
 
   audio: {

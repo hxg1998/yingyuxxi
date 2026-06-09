@@ -22,10 +22,6 @@ const MOCK_CARD: CardData = {
     howToRead: '中间「赖恩」使劲、拖长，两头「呃」和「门特」轻声快快带过，别三个字一样用力。',
     naturalBreakdown: 'a-LINE-ment',
   },
-  translit: {
-    text: null,
-    disclaimer: '仅辅助开口，最终以英文发音为准',
-  },
   examples: [
     {
       english: 'We need to ensure alignment between the product team and engineering before the launch.',

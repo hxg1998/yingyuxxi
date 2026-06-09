@@ -14,10 +14,14 @@ const SYSTEM_PROMPT = `你是一个专为中文母语者设计的英语学习卡
 发音模块规则（最重要，面向"看不懂英文/音标"的中文用户）：
 核心原则：用户不会读英文、也看不懂音标。"怎么读"这一行必须是纯中文，用户扫一眼就能直接念出来。英文拆读只是给想深究的人看的次要参考。
 
-- readingChinese：纯中文谐音，用户照着就能念出声。
-  - 只能用中文汉字，绝对不能出现任何英文字母或音标符号。
-  - 音节之间用"-"连接。
-  - 示例：alignment → "呃-赖恩-门特"；onboarding → "昂-波-丁"；product → "普-辣-克特"；market → "马-克特"；fit → "费特"。
+- phonetic.ipa：给出该词【准确】的标准音标，以权威词典里的通用读音为准，不要凭字母拼写臆造。这是整个发音模块的事实依据，后面的 readingChinese 必须和它一致。例如 todo = /tuːˈduː/（不是 /toʊdoʊ/）。
+
+- readingChinese：纯中文谐音，用户照着就能念出声。【准确性是第一要求，必须以真实发音为准】
+  - **必须严格依据这个词的真实发音（即上面 phonetic.ipa 的音标）逐个音去对应中文字，绝对不要照英文字母拼写来猜。** 先确定这个词到底怎么念，再把每个音用最接近的普通话字写出来。
+  - 特别警惕"被拼写带偏"：同一个字母在不同词里读音天差地别。例如字母 o 可以读 /uː/(do)、/oʊ/(go)、/ɒ/(lot)、/ʌ/(son)，必须按真实发音选字，不能一看到 o 就写"欧/兜/透"。
+  - 只能用中文汉字，绝对不能出现任何英文字母或音标符号；音节之间用"-"连接。
+  - 反例（错误示范）：todo 真实读音是 /tuːˈduː/（"兔-杜"，两个音都是 /uː/ 乌音）；若照字母 o 猜成"透-兜"就【错了】。
+  - 正确示例：todo /tuːˈduː/ → "兔-杜"（重音"杜"）；knight /naɪt/ → "奈特"（k 和 gh 不发音）；alignment /əˈlaɪnmənt/ → "呃-赖恩-门特"；onboarding → "昂-波-丁"；product → "普-辣-克特"；fit → "费特"。
 
 - stressedSyllable：readingChinese 里要"使劲、读重、拖长"的那一个中文音节。
   - 必须是 readingChinese 里出现过的子串。
@@ -50,10 +54,6 @@ const SYSTEM_PROMPT = `你是一个专为中文母语者设计的英语学习卡
     "howToRead": "大白话讲怎么读，1-2句",
     "naturalBreakdown": "英文音节拆读（次要参考）"
   },
-  "translit": {
-    "text": "中文音译或null（与chinesePinyin相同时设为null）",
-    "disclaimer": "仅辅助开口，最终以英文发音为准"
-  },
   "examples": [
     {
       "english": "英文例句",
@@ -76,7 +76,8 @@ function buildUserPrompt(inputType: InputType, userInput: string): string {
 
 /**
  * Build the prompt messages for the AI call.
- * The actual HTTP call is done in the API route using @ai-sdk/anthropic.
+ * The actual HTTP call is done in the API route via the OpenAI-compatible
+ * provider (DeepSeek).
  */
 export function buildPromptMessages(inputType: InputType, userInput: string) {
   return {

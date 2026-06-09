@@ -42,8 +42,8 @@
   --font-size-title-2:   20px;   /* CardHeader input word */
   --font-size-title-3:   16px;   /* Meaning main body */
   --font-size-body-1:    14px;   /* IPA, example English, button text */
-  --font-size-body-2:    13px;   /* Example Chinese, naturalBreakdown, chinesePinyin */
-  --font-size-body-3:    12px;   /* Tips, context, translit disclaimer */
+  --font-size-body-2:    13px;   /* Example Chinese, howToRead, naturalBreakdown */
+  --font-size-body-3:    12px;   /* context, secondary labels */
   --font-size-caption:   12px;   /* Placeholder, example hint labels */
 
   /* --- Typography — font weights (DESIGN.md §3.2) --- */
@@ -78,6 +78,42 @@
 
   /* Animation duration (used by card-fade-in) */
   --transition-duration-2: 200ms;
+
+  /* ============================================================
+     REVIEW LIBRARY TOKENS (v0.4.0, DESIGN.md §12.2)
+     All values composed from theme raw ramp vars — no hex literals.
+     ============================================================ */
+
+  /* Today's review queue card */
+  --color-review-queue-bg:     rgb(var(--primary-1));   /* warm light bg, same ramp as mixedPronunciation */
+  --color-review-queue-border: rgb(var(--primary-2));   /* left 3px accent stripe */
+
+  /* Three-grade scoring buttons */
+  --color-score-fail:          rgb(var(--danger-1));    /* "完全不会" hover/active bg */
+  --color-score-fail-text:     rgb(var(--danger-6));    /* "完全不会" text + icon */
+  --color-score-fuzzy:         rgb(var(--warning-1));   /* "模糊记得" hover/active bg */
+  --color-score-fuzzy-text:    rgb(var(--warning-6));   /* "模糊记得" text + icon */
+  --color-score-clear:         rgb(var(--success-1));   /* "清楚记得" hover/active bg */
+  --color-score-clear-text:    rgb(var(--success-6));   /* "清楚记得" text + icon */
+
+  /* Navigation badge */
+  --color-badge-review:        rgb(var(--danger-6));    /* red bubble, "pending" semantic */
+
+  /* Review session card background */
+  --color-review-card-bg:      var(--color-bg-2);       /* reuse existing card bg token — note: resolves at render time */
+
+  /* Statistics number emphasis */
+  --color-stats-value:         rgb(var(--primary-6));   /* total/mastered/due count numbers */
+
+  /* Footer data-risk warning */
+  --color-footer-warning:      rgb(var(--warning-6));   /* ⚠ footer advisory text */
+
+  /* --- Frosted-glass background (sticky input panel) ---
+     Semi-transparent white over --color-bg-1 (#fff); paired with
+     backdrop-filter blur so content scrolling underneath shows
+     through softly. Defined here as the single source of truth. */
+  --color-glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-blur: 12px;
 }
 
 /* =========================================================
@@ -163,4 +199,126 @@ body {
     padding-top: 10px;
     padding-bottom: 10px;
   }
+}
+
+/* =========================================================
+   REVIEW LIBRARY — shared styles (v0.4.0)
+   ========================================================= */
+
+/* Today's review queue card left stripe (mirrors .example-item-card pattern) */
+.review-queue-card {
+  background-color: var(--color-review-queue-bg);
+  border-radius: var(--border-radius-medium);
+  border-left: 3px solid var(--color-review-queue-border);
+  padding: var(--spacing-5);
+}
+
+/* Score buttons: three-grade colour discipline */
+/* Default outline – only border + text coloured */
+.score-btn-fail {
+  border-color: var(--color-score-fail-text) !important;
+  color: var(--color-score-fail-text) !important;
+}
+.score-btn-fail:hover,
+.score-btn-fail:active {
+  background-color: var(--color-score-fail) !important;
+}
+
+.score-btn-fuzzy {
+  border-color: var(--color-score-fuzzy-text) !important;
+  color: var(--color-score-fuzzy-text) !important;
+}
+.score-btn-fuzzy:hover,
+.score-btn-fuzzy:active {
+  background-color: var(--color-score-fuzzy) !important;
+}
+
+.score-btn-clear {
+  border-color: var(--color-score-clear-text) !important;
+  color: var(--color-score-clear-text) !important;
+}
+.score-btn-clear:hover,
+.score-btn-clear:active {
+  background-color: var(--color-score-clear) !important;
+}
+
+/* Mobile tab bar */
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: none;
+  background: var(--color-bg-2);
+  border-top: 1px solid var(--color-border-2);
+  z-index: 100;
+}
+
+@media (max-width: 767px) {
+  .mobile-tab-bar {
+    display: flex;
+  }
+  /* Add bottom padding so page content doesn't hide behind tab bar */
+  .has-tab-bar {
+    padding-bottom: 56px;
+  }
+}
+
+.mobile-tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--color-text-3);
+  font-size: var(--font-size-caption);
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.mobile-tab-item.active {
+  color: var(--color-primary-6);
+}
+
+/* Desktop app header — hidden on mobile, shown on ≥768px */
+@media (min-width: 768px) {
+  .app-header-desktop {
+    display: flex !important;
+  }
+  /* When desktop header is present, add top padding so sticky InputPanel clears it */
+  .has-app-header {
+    padding-top: 0;
+  }
+}
+
+/* Review session score bar (mobile sticky bottom) */
+.score-bar-sticky {
+  position: sticky;
+  bottom: 0;
+  background: var(--color-bg-2);
+  border-top: 1px solid var(--color-border-2);
+  padding: var(--spacing-3) var(--spacing-5) var(--spacing-5);
+  z-index: 10;
+}
+
+/* Card slide animation for review flow */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 150ms ease-out both;
 }

@@ -58,7 +58,6 @@ export function validateAndNormalizeCard(raw: unknown): CardData {
 
   // Build normalized CardData (filling optional fields with null)
   const phonetic = (obj.phonetic as Record<string, unknown> | null) ?? {};
-  const translit = (obj.translit as Record<string, unknown> | null) ?? {};
   const audio = (obj.audio as Record<string, unknown> | null) ?? {};
 
   return {
@@ -82,12 +81,6 @@ export function validateAndNormalizeCard(raw: unknown): CardData {
           : '',
       howToRead: pron.howToRead as string,
       naturalBreakdown: pron.naturalBreakdown as string,
-    },
-    translit: {
-      text: typeof translit.text === 'string' ? translit.text : null,
-      disclaimer: typeof translit.disclaimer === 'string'
-        ? translit.disclaimer
-        : '仅辅助开口，最终以英文发音为准',
     },
     // Only take first 2 examples
     examples: (obj.examples as unknown[]).slice(0, 2).map((ex) => {
