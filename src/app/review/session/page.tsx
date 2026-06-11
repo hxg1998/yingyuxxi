@@ -104,23 +104,29 @@ function SessionInner() {
   const [sessionResult, setSessionResult] = useState<SessionResult>({ total: 0, clear: 0, fuzzy: 0, fail: 0 });
   const [animKey, setAnimKey] = useState(0);
 
-  // Load queue on mount
+  // Load queue on mount (async — data comes from the cloud)
   useEffect(() => {
-    let q: ReviewCard[];
-    if (singleId) {
-      const card = getCard(singleId);
-      q = card ? [card] : [];
-    } else {
-      const all = getAllCards();
-      q = getTodayQueue(all);
-    }
-
-    if (q.length === 0) {
-      Message.info({ content: '当前没有需要复习的词', duration: 2500 });
-      router.replace('/review');
-      return;
-    }
-    setQueue(q);
+    let cancelled = false;
+    (async () => {
+      let q: ReviewCard[];
+      if (singleId) {
+        const card = await getCard(singleId);
+        q = card ? [card] : [];
+      } else {
+        const all = await getAllCards();
+        q = getTodayQueue(all);
+      }
+      if (cancelled) return;
+      if (q.length === 0) {
+        Message.info({ content: '当前没有需要复习的词', duration: 2500 });
+        router.replace('/review');
+        return;
+      }
+      setQueue(q);
+    })();
+    return () => {
+      cancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -133,13 +139,14 @@ function SessionInner() {
     setAnimKey((k) => k + 1);
   }
 
-  function handleGrade(q: ReviewGrade) {
+  async function handleGrade(q: ReviewGrade) {
     if (!currentCard || grading) return;
     setGrading(true);
 
-    // Update SRS in localStorage
+    // Compute new SRS state and persist to the cloud (await so the write
+    // completes before we possibly navigate away on the last card)
     const updates = applyReview(currentCard, q);
-    updateCardSRS(currentCard.id, updates);
+    await updateCardSRS(currentCard.id, updates);
 
     // Update session result
     const newResult = { ...sessionResult };

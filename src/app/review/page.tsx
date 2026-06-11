@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * /review — Review Library list page.
+ * /review — Review Library list page (v0.7.0).
  *
- * Shows today's review queue, statistics, filter tabs, search, sorted list,
- * export button, and the first-time data-risk modal.
+ * Data source migrated from localStorage to Supabase cloud.
+ * All review-store calls are now async — a loading spinner is shown
+ * while the initial fetch completes.
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -15,12 +16,12 @@ import {
   Input,
   Tabs,
   Tag,
-  Space,
   Grid,
   Modal,
   Message,
   Select,
   Empty,
+  Spin,
 } from '@arco-design/web-react';
 import {
   IconDownload,
@@ -32,8 +33,6 @@ import {
   getAllCards,
   markMastered,
   exportAllData,
-  getMeta,
-  setMetaField,
 } from '@/lib/review-store';
 import { ReviewCard } from '@/lib/review-store';
 import { countTodayDue, formatDueDate, getTodayQueue, countDueTomorrow } from '@/lib/srs';
@@ -46,51 +45,25 @@ const { Row, Col } = Grid;
 export default function ReviewPage() {
   const router = useRouter();
   const [cards, setCards] = useState<ReviewCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [searchText, setSearchText] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('dueDate');
-  const [riskModalShown, setRiskModalShown] = useState(false);
 
   // ── Load data ──────────────────────────────────────────────────
-  const loadCards = useCallback(() => {
-    const all = getAllCards();
-    setCards(all);
+  const loadCards = useCallback(async () => {
+    setLoading(true);
+    try {
+      const all = await getAllCards();
+      setCards(all);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     loadCards();
   }, [loadCards]);
-
-  // ── Risk notice (first visit) ──────────────────────────────────
-  useEffect(() => {
-    if (riskModalShown) return;
-    const meta = getMeta();
-    if (!meta.riskNoticeShown) {
-      setRiskModalShown(true);
-      Modal.info({
-        title: '关于复习库数据存储',
-        content: (
-          <Space direction="vertical" size={8}>
-            <Typography.Text>
-              复习库所有数据存储在你的浏览器本地（localStorage）
-            </Typography.Text>
-            <Typography.Text type="secondary" style={{ whiteSpace: 'pre-line' }}>
-              {`· 不需要注册账号，立即可用\n· 清除浏览器缓存/Cookie 会导致数据丢失\n· 换浏览器或换设备，数据不会自动同步`}
-            </Typography.Text>
-            <Typography.Text>
-              建议：养成定期点击「导出 JSON」备份数据的习惯
-            </Typography.Text>
-          </Space>
-        ),
-        okText: '我知道了，开始使用',
-        maskClosable: false,
-        okButtonProps: { type: 'primary', long: true } as Record<string, unknown>,
-        onOk: () => {
-          setMetaField({ riskNoticeShown: true });
-        },
-      });
-    }
-  }, [riskModalShown]);
 
   // ── Derived stats ──────────────────────────────────────────────
   const todayDue = countTodayDue(cards);
@@ -164,27 +137,54 @@ export default function ReviewPage() {
       okText: '确认标记',
       cancelText: '取消',
       okButtonProps: { type: 'primary' } as Record<string, unknown>,
-      onOk: () => {
-        markMastered(card.id);
-        Message.success({ content: '已标记为掌握', duration: 2000 });
-        loadCards();
+      onOk: async () => {
+        const ok = await markMastered(card.id);
+        if (ok) {
+          Message.success({ content: '已标记为掌握', duration: 2000 });
+          loadCards();
+        } else {
+          Message.error({ content: '操作失败，请重试', duration: 3000 });
+        }
       },
     });
   }
 
-  function handleExport() {
-    const json = exportAllData();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    a.href = url;
-    a.download = `wordcard-backup-${dateStr}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    Message.success({ content: '备份文件已下载', duration: 2000 });
+  async function handleExport() {
+    try {
+      const json = await exportAllData();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a.href = url;
+      a.download = `wordcard-backup-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      Message.success({ content: '备份文件已下载', duration: 2000 });
+    } catch {
+      Message.error({ content: '导出失败，请重试', duration: 3000 });
+    }
+  }
+
+  // ── Loading state ─────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="has-tab-bar" style={{ background: 'var(--color-bg-1)', minHeight: '100vh' }}>
+        <AppNav />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '50vh',
+          }}
+        >
+          <Spin size={32} tip="加载中..." />
+        </div>
+      </div>
+    );
   }
 
   // ── Empty state ───────────────────────────────────────────────
@@ -522,7 +522,7 @@ export default function ReviewPage() {
           </div>
         )}
 
-        {/* Footer risk warning */}
+        {/* Footer note — data is now cloud-backed */}
         <div
           style={{
             marginTop: 'var(--spacing-6)',
@@ -533,10 +533,10 @@ export default function ReviewPage() {
           <Typography.Text
             style={{
               fontSize: 'var(--font-size-caption)',
-              color: 'var(--color-footer-warning)',
+              color: 'var(--color-text-3)',
             }}
           >
-            ⚠ 数据存储在本地浏览器，清除缓存/Cookie 会导致数据丢失。建议定期使用「导出 JSON」备份数据。
+            数据已云端同步，绑定当前账户。
           </Typography.Text>
         </div>
       </div>

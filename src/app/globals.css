@@ -322,3 +322,27 @@ body {
 .slide-in-right {
   animation: slideInRight 150ms ease-out both;
 }
+
+/* =========================================================
+   AUTH NAV AREA — responsive visibility (v0.6.0)
+   Desktop: show full label + email; Mobile: avatar only.
+   ========================================================= */
+
+/* By default (mobile), hide desktop user label; show mobile avatar */
+.auth-user-desktop {
+  display: none;
+}
+.auth-user-mobile {
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .auth-user-desktop {
+    display: flex;
+    align-items: center;
+  }
+  .auth-user-mobile {
+    display: none;
+  }
+}

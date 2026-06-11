@@ -3,6 +3,43 @@
 本项目版本号遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）：`主版本.次版本.修订号`。
 每次改动在此记录一条，并打对应的 git tag（如 `v0.2.0`）。
 
+## [0.7.0] - 2026-06-11
+
+### 变更
+- 复习库存储从 localStorage 迁移到 Supabase 云端，绑定登录账户，跨设备可用
+- 新增 `review_cards` 表（卡片内容 + SM-2 状态合表），RLS 基于 `auth.uid()` 做用户隔离，`(user_id, normalized_text)` 唯一约束去重
+- 数据层 `review-store.ts` 改为 supabase-js 直连（异步），DB snake_case ↔ JS camelCase 集中映射；调用方（复习库列表/复习流程/完成页/导航角标）改造为异步加载
+- 查词成功 upsert 到云端（已存在未掌握→只更新内容保留 SRS 进度；已掌握→弹窗确认）；复习评分回写 SM-2 状态；导出 JSON 数据源改为云端
+- 未登录不读写云端，安全降级不报错；旧 localStorage 数据不迁移
+
+## [0.6.0] - 2026-06-10
+
+### 新增
+- 登录与身份认证模块（Login & Auth，PRD/12-login-auth.md）：Supabase Auth + 邮箱 Magic Link 唯一登录方式
+- 新增 Zustand `authStore`（`src/stores/authStore.ts`）：管理 `user`、`sessionStatus`，对外暴露 `user.id` 和 `sessionStatus` 供云存储模块后续消费
+- 新增 `AuthProvider`（根 Layout Client Component）：挂载 `onAuthStateChange` 监听器，自动同步登录态到 authStore，含 3 秒 session 加载超时静默降级
+- 新增 `LoginModal`（`src/components/auth/LoginModal.tsx`）：Magic Link 登录弹窗，三态切换（邮箱输入 / 发送中 / 邮件已发送），含60秒倒计时重发、更换邮箱、前端邮箱校验、行内错误提示
+- 新增 `AuthNavArea`（`src/components/auth/AuthNavArea.tsx`）：导航栏右侧区域，根据 sessionStatus 渲染三种态（Skeleton 骨架 / 登录按钮 / 用户菜单）
+- 新增 `UserMenu`（`src/components/auth/UserMenu.tsx`）：已登录态用户标识，Desktop 展示邮箱缩略 + 下拉菜单，Mobile 仅显示头像 + 右侧 Drawer
+- 新增 `useAuthGate` hook（`src/lib/useAuthGate.ts`）：动作级登录拦截，未登录时弹 LoginModal，登录后自动执行待定操作
+- 新增 `/auth/callback` route handler：处理 Magic Link 回调，exchangeCodeForSession 建立 session
+- 新增 `/auth/error` 页面：Magic Link 失效时的全页错误状态（Arco Result 组件）
+- 新增 Supabase 中间件（`middleware.ts`）：每次请求静默刷新 session cookie
+- 按需弹窗拦截：「翻译按钮」和「复习库」入口点击时检查 sessionStatus，未登录则弹 LoginModal（source 对应不同文案）
+- 新增 Supabase 依赖：`@supabase/supabase-js`、`@supabase/ssr`
+- 更新 `.env.example`，增加 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 占位说明
+- 新增 `docs/supabase-setup.md`：Supabase 项目创建 + 环境变量配置傻瓜步骤文档
+
+### 修改
+- `AppNav`：集成 AuthNavArea 到桌面端 Header 右侧；复习库按钮点击接入登录拦截
+- `layout.tsx`：根 Layout 包裹 AuthProvider
+- `page.tsx`（首页）：翻译按钮 onSubmit 接入 useAuthGate 拦截
+
+### 边界说明（本模块不做）
+- 复习库的云端存储/同步数据（另一对话单独实现）
+- localStorage 老数据迁移（已知取舍，见 PRD/12-login-auth.md）
+- 跨标签页自动接续操作（后续打磨项）
+
 ## [0.5.0] - 2026-06-09
 
 ### 变更

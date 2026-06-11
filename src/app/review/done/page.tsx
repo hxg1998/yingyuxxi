@@ -7,7 +7,7 @@
  * Shows this-session stats, tomorrow/day-after preview, and two action buttons.
  */
 
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Typography,
@@ -34,9 +34,20 @@ function DoneInner() {
     // Use defaults
   }
 
-  const allCards = getAllCards();
-  const tomorrowCount = countDueTomorrow(allCards);
-  const dayAfterCount = countDueDayAfterTomorrow(allCards);
+  const [tomorrowCount, setTomorrowCount] = useState(0);
+  const [dayAfterCount, setDayAfterCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllCards().then((allCards) => {
+      if (cancelled) return;
+      setTomorrowCount(countDueTomorrow(allCards));
+      setDayAfterCount(countDueDayAfterTomorrow(allCards));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const stats = [
     {

@@ -6,6 +6,11 @@
  * Desktop: horizontal header with "首页" and "复习库" links + Badge.
  * Mobile: fixed bottom tab bar (shown via CSS at ≤767px).
  *
+ * Auth integration (v0.6.0):
+ *   - Desktop header right: AuthNavArea (Skeleton / login button / user menu)
+ *   - Clicking "复习库" when unauthenticated opens LoginModal (source='review')
+ *   - Clicking "复习库" when authenticated navigates normally
+ *
  * todayDueCount is read lazily from localStorage on mount so this
  * component works even in pages that don't pre-fetch it.
  *
@@ -18,17 +23,31 @@ import { Badge } from '@arco-design/web-react';
 import { IconHome, IconBook } from '@arco-design/web-react/icon';
 import { getAllCards } from '@/lib/review-store';
 import { countTodayDue } from '@/lib/srs';
+import { useAuthStore } from '@/stores/authStore';
+import AuthNavArea from '@/components/auth/AuthNavArea';
+import LoginModal from '@/components/auth/LoginModal';
 
 export default function AppNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [todayDue, setTodayDue] = useState(0);
+  const { sessionStatus } = useAuthStore();
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
 
   useEffect(() => {
-    // Read from localStorage after mount (client-only)
-    const cards = getAllCards();
-    setTodayDue(countTodayDue(cards));
-  }, []);
+    // Today-due count comes from the cloud; only fetch when authenticated.
+    if (sessionStatus !== 'authenticated') {
+      setTodayDue(0);
+      return;
+    }
+    let cancelled = false;
+    getAllCards().then((cards) => {
+      if (!cancelled) setTodayDue(countTodayDue(cards));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionStatus]);
 
   const isHome = pathname === '/';
   const isReview = pathname.startsWith('/review');
@@ -37,8 +56,20 @@ export default function AppNav() {
     router.push('/');
   }
 
-  function goReview() {
+  function handleGoReview() {
+    if (sessionStatus === 'loading') {
+      // Prevent click while session is still resolving
+      return;
+    }
+    if (sessionStatus === 'unauthenticated') {
+      setReviewModalVisible(true);
+      return;
+    }
     router.push('/review');
+  }
+
+  function handleReviewModalClose() {
+    setReviewModalVisible(false);
   }
 
   return (
@@ -88,11 +119,11 @@ export default function AppNav() {
           </button>
 
           <button
-            onClick={goReview}
+            onClick={handleGoReview}
             style={{
               background: 'none',
               border: 'none',
-              cursor: 'pointer',
+              cursor: sessionStatus === 'loading' ? 'default' : 'pointer',
               padding: 'var(--spacing-2) var(--spacing-3)',
               borderRadius: 'var(--border-radius-medium)',
               fontSize: 'var(--font-size-body-1)',
@@ -101,6 +132,7 @@ export default function AppNav() {
               display: 'flex',
               alignItems: 'center',
               gap: 'var(--spacing-2)',
+              opacity: sessionStatus === 'loading' ? 0.5 : 1,
             }}
           >
             <Badge
@@ -114,6 +146,11 @@ export default function AppNav() {
             </Badge>
           </button>
         </nav>
+
+        {/* Auth nav area — right side */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <AuthNavArea />
+        </div>
       </header>
 
       {/* ── Mobile bottom tab bar ── */}
@@ -123,7 +160,10 @@ export default function AppNav() {
           <span>首页</span>
         </button>
 
-        <button className={`mobile-tab-item${isReview ? ' active' : ''}`} onClick={goReview}>
+        <button
+          className={`mobile-tab-item${isReview ? ' active' : ''}`}
+          onClick={handleGoReview}
+        >
           <Badge
             count={todayDue}
             maxCount={99}
@@ -134,6 +174,13 @@ export default function AppNav() {
           <span>复习库</span>
         </button>
       </div>
+
+      {/* ── Login modal for review gate (nav) ── */}
+      <LoginModal
+        visible={reviewModalVisible}
+        triggerSource="review"
+        onClose={handleReviewModalClose}
+      />
     </>
   );
 }

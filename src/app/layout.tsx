@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import AuthProvider from '@/components/auth/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'WordCard — 英语学习卡片',
@@ -13,7 +14,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        {/*
+          AuthProvider mounts supabase.auth.onAuthStateChange() at the root level
+          so auth state is available globally across all pages.
+        */}
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

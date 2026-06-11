@@ -11,6 +11,8 @@ import LoadingSkeleton from '@/components/shared/LoadingSkeleton';
 import ErrorState from '@/components/shared/ErrorState';
 import AppNav from '@/components/review/AppNav';
 import { useAutoSave } from '@/lib/useAutoSave';
+import { useAuthGate } from '@/lib/useAuthGate';
+import LoginModal from '@/components/auth/LoginModal';
 
 /**
  * Inner page component — reads URL search params.
@@ -34,6 +36,7 @@ function HomePageInner() {
   } = useCardStore();
 
   const { saveCardToReview } = useAutoSave();
+  const { guard: authGuard, modalProps: authModalProps } = useAuthGate('translate');
 
   // Track whether we've already triggered an auto-translate on mount for the URL q param
   const autoTranslateTriggered = useRef(false);
@@ -134,11 +137,16 @@ function HomePageInner() {
       >
       <div style={{ width: '100%', maxWidth: 680 }}>
         {/* Input panel — always visible */}
+        {/*
+          Auth gate: the translate action requires login.
+          When unauthenticated, guard() opens the LoginModal instead of translating.
+        */}
         <InputPanel
-          onSubmit={translate}
+          onSubmit={(input) => authGuard(() => translate(input))}
           isLoading={isLoading}
           initialValue={inputValue || searchParams.get('q') || ''}
         />
+        <LoginModal {...authModalProps} />
 
         {/* Loading state */}
         {isLoading && <LoadingSkeleton />}
