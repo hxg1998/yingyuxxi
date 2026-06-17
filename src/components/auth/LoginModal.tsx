@@ -163,7 +163,7 @@ export default function LoginModal({ visible, triggerSource, onClose }: LoginMod
       // Translate Supabase error messages to Chinese user-friendly text
       const msg = supabaseError.message.toLowerCase();
       if (msg.includes('rate limit') || msg.includes('too many')) {
-        setSendError('发送太频繁，请等待一分钟后再试');
+        setSendError('发送太频繁，请稍后再试');
       } else if (msg.includes('timeout') || msg.includes('network')) {
         setSendError('网络超时，请检查网络后重试');
       } else {
