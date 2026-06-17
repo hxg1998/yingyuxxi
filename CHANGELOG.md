@@ -3,6 +3,24 @@
 本项目版本号遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）：`主版本.次版本.修订号`。
 每次改动在此记录一条，并打对应的 git tag（如 `v0.2.0`）。
 
+## [0.8.0] - 2026-06-16
+
+### 新增
+- 真人发音模块（PRD/13-real-pronunciation.md）：在「怎么读」区块新增「真人发音」按钮，播放 Merriam-Webster 词典真人录音，与现有「点我听（TTS）」按钮并排展示
+- 新增服务端路由 `/api/mw-lookup`：接收 `GET ?word=xxx`，携带 `MW_COLLEGIATE_API_KEY` 调用 MW Collegiate API，解析音频文件名并按 MW 子目录规则拼接 URL，返回 JSON；API Key 不透传到前端
+- 新增 `RealPronunciationButton` 组件（`src/components/shared/RealPronunciationButton.tsx`）：完整实现 6 态状态机（idle / loading / playing / disabled-type / disabled-no-audio / error）；disabled 态通过 span 包裹触发 Arco Tooltip（"仅支持单词" / "该词暂无真人录音" / "发音加载失败，请稍后重试"）；图标 IconUserGroup（蓝色 --color-primary-6）与 SpeakButton 绿色区分
+- 更新 `PronunciationModule`：新增可选 `originalText` prop，传入时渲染两个按钮（SpeakButton + RealPronunciationButton），不传时仍只渲染 SpeakButton（复习流程页自动保持原样）
+- 更新 `.env.example` 和 `.env.local` 新增 `MW_COLLEGIATE_API_KEY` 占位配置及 `MW_SCHOOL_API_KEY` 预留注释
+
+### 边界说明（本版本不做）
+- SD4 学校词典兜底、多来源降级链、音频服务端缓存（划到 V2）
+- 复习流程页不渲染真人发音按钮（通过 `PronunciationModule` 的可选 `originalText` prop 控制）
+
+## [0.7.1] - 2026-06-16
+
+### 修复
+- 登录发信触发频率限制（Supabase 429）时的提示文案：由「发送太频繁，请等待一分钟后再试」改为「发送太频繁，请稍后再试」——原文案写死「一分钟」，与每小时发信上限的实际等待不符，易误导
+
 ## [0.7.0] - 2026-06-11
 
 ### 变更

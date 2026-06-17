@@ -112,11 +112,12 @@ export default function CardResult({ data, inputType }: CardResultProps) {
           </>
         )}
 
-        {/* Module 3: Pronunciation (always rendered) — tap-to-listen lives inside */}
+        {/* Module 3: Pronunciation (always rendered) — tap-to-listen + real pronunciation live inside */}
         <PronunciationModule
           pronunciation={data.pronunciation}
           inputType={inputType}
           speakText={data.originalInput}
+          originalText={data.originalInput}
         />
 
         <Divider style={{ margin: 'var(--spacing-4) 0' }} />

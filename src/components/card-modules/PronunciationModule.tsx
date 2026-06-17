@@ -3,12 +3,19 @@
 import { Typography, Space } from '@arco-design/web-react';
 import { PronunciationData, InputType } from '@/types/card';
 import SpeakButton from '../shared/SpeakButton';
+import RealPronunciationButton from '../shared/RealPronunciationButton';
 
 interface PronunciationModuleProps {
   pronunciation: PronunciationData;
   inputType: InputType;
   /** Original English text — spoken aloud by the tap-to-listen button. */
   speakText: string;
+  /**
+   * When provided, renders the 真人发音 (MW real pronunciation) button next to
+   * SpeakButton.  Omit (or leave undefined) to hide the real-pronunciation
+   * button — e.g. in the review session page where only TTS is needed.
+   */
+  originalText?: string;
 }
 
 /**
@@ -69,6 +76,7 @@ export default function PronunciationModule({
   pronunciation,
   inputType,
   speakText,
+  originalText,
 }: PronunciationModuleProps) {
   const { readingChinese, stressedSyllable, howToRead, naturalBreakdown } = pronunciation;
   const isSentence = inputType === 'sentence';
@@ -115,7 +123,16 @@ export default function PronunciationModule({
         </div>
 
         {/* All three types (word / phrase / sentence) get a SpeakButton — TTS API handles sentences fine */}
-        <SpeakButton text={speakText} />
+        {/* When originalText is provided, show RealPronunciationButton next to SpeakButton (card detail page).
+            When omitted (review session page), only SpeakButton is rendered. */}
+        {originalText ? (
+          <Space size={12} wrap style={{ flexShrink: 0 }}>
+            <SpeakButton text={speakText} />
+            <RealPronunciationButton word={originalText} inputType={inputType} />
+          </Space>
+        ) : (
+          <SpeakButton text={speakText} />
+        )}
       </div>
 
       {/* howToRead — plain-language rhythm guidance */}
