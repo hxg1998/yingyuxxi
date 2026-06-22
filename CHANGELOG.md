@@ -3,6 +3,33 @@
 本项目版本号遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）：`主版本.次版本.修订号`。
 每次改动在此记录一条，并打对应的 git tag（如 `v0.2.0`）。
 
+## [0.9.2] - 2026-06-22
+
+### 修复（线上生产故障）
+- **修复线上间歇性整站报错**：`middleware.ts` 的 `supabase.auth.getUser()` 裸 await 无容错——Supabase Auth 偶发网络抖动/冷启动时未捕获异常会让中间件崩溃、全站返回 500。改为 try-catch 优雅降级（跳过本次 session 刷新，不阻断请求）
+- **修复「点我听」TTS 线上 500**：缓存目录建在 `process.cwd()`（Vercel 上为只读的 `/var/task`），`mkdirSync` 抛 EROFS 导致接口崩溃。改用 `os.tmpdir()`（Vercel 唯一可写路径）；`ensureCacheDir` 改为不抛异常、缓存不可用时自动跳过缓存仍正常发音
+- **修复「真人发音」线上 503**：`MW_COLLEGIATE_API_KEY` 此前只在本地 `.env.local`、未加到 Vercel 生产环境，导致 `/api/mw-lookup` 返回未配置。本次补加该变量到 Vercel 生产并重新部署
+
+## [0.9.1] - 2026-06-17
+
+### 修复
+- **修复 CSS 颜色 token 全局静默失效的根因**：设计 token 层从 `:root` 移到 `body` 作用域。Arco 主题包把 raw ramp 变量（`--primary-6`、`--success-6` 等）定义在 `body` 上，而 token 层原定义在 `:root`（= html，body 的父级），CSS 变量只向下继承，导致 `rgb(var(--primary-6))` 等所有 `--color-*` token 解析为空——这正是发音按钮蓝绿色一直无法生效的真正原因。同步更新 CLAUDE.md 的 token 规则（`:root` → `body`）
+- 修复导航「复习库」红色角标铺满整个文字：`AppNav` 的 Badge 由错误的 `style={{ background }}`（被 Arco 应用到外层 wrapper）改为 Arco Badge 的 `color` prop（正确作用于角标）。该 bug 此前因 `--color-badge-review` token 失效（透明）而被掩盖，token 修复后暴露
+- 统一「点我听」和「真人发音」两个按钮的样式，让蓝绿色区分真正落到按钮主体（边框 + 文字 + 图标），而非仅图标
+- `globals.css` 新增 `.speak-button:not(:disabled)` 绿色规则和 `.real-pron-button:not(:disabled)` 蓝色规则，覆盖 Arco `type="outline"` 默认主题蓝；hover/active 态同步协调，`:not(:disabled)` 限定范围保留 Arco 原生 disabled 灰样式
+- 新增 `.real-pron-button--active` class 供 loading/playing 态（`disabled=true` 但视觉应保蓝色）使用
+- `SpeakButton`：简化图标渲染，移除冗余的 `<span className="speak-button-icon">` 包裹层，图标色改由 `.speak-button` 的 `color` 继承
+- `RealPronunciationButton`：图标移除内联 `style={{ color }}` 散落写法，改由 `className="real-pron-button"` 统一管理；loading/playing 态额外附 `real-pron-button--active` class
+- 复习页 Step1/Step2 的内联「点我听」Button 改为直接复用 `SpeakButton` 组件（消除重复逻辑，获得状态机 + 缓存 + 可停止功能），删除已无调用方的 `speak()` 辅助函数和 `IconPlayCircle` 导入
+
+## [0.9.0] - 2026-06-17
+
+### 新增
+- 复习流程页接入真人发音按钮（PRD/13-real-pronunciation.md v1.1）：Step1（正面·回忆态）和 Step2（翻开·评分态）各增加一个 `RealPronunciationButton`，与现有「点我听」TTS 按钮并排展示，降级逻辑与卡片页完全一致
+- Step1 两按钮水平居中，`size="large"` 与现有 TTS 按钮对齐，移动端允许折行
+- Step2 Header 右侧两按钮横排，`size="small"` 与现有 TTS 按钮对齐；左侧原文区 `flex:1` 支持长词折行，右侧按钮组 `flexShrink:0` 不被压缩
+- 翻牌音频停止：Step1 与 Step2 条件渲染（不同时存在 DOM），翻牌时 Step1 整体 unmount，`RealPronunciationButton` 的 cleanup useEffect 自动 pause 音频；换卡时 `key={card.id}` 强制 remount 保证新卡重置状态
+
 ## [0.8.1] - 2026-06-17
 
 ### 修复

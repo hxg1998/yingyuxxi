@@ -161,15 +161,13 @@ export default function RealPronunciationButton({
   function getIcon() {
     switch (btnState) {
       case 'loading':
-        return <IconLoading spin style={{ color: 'var(--color-primary-6)' }} />;
+        return <IconLoading spin />;
       case 'playing':
-        return <IconPauseCircle style={{ color: 'var(--color-primary-6)' }} />;
+        return <IconPauseCircle />;
       default:
         // idle / disabled-* / error all show IconUserGroup
-        // Color is inherited from Button disabled styles for disabled states
-        return btnState === 'idle'
-          ? <IconUserGroup style={{ color: 'var(--color-primary-6)' }} />
-          : <IconUserGroup />;
+        // idle 态图标色由 .real-pron-button 继承，disabled 态由 Arco 灰化
+        return <IconUserGroup />;
     }
   }
 
@@ -190,20 +188,26 @@ export default function RealPronunciationButton({
     btnState === 'disabled-no-audio' ||
     btnState === 'error';
 
+  // loading / playing 态虽传 disabled=true，视觉仍需保蓝色
+  // 用 --active 修饰符 class 撑起这两种活跃态的颜色
+  const isActiveBluState = btnState === 'loading' || btnState === 'playing';
+  const className = [
+    'real-pron-button',
+    isActiveBluState ? 'real-pron-button--active' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   const tooltipContent = getTooltipContent(btnState);
 
   const button = (
     <Button
+      className={className}
       type="outline"
       shape="round"
       size={size}
       icon={getIcon()}
       disabled={isDisabled}
-      style={
-        btnState === 'idle' || btnState === 'loading' || btnState === 'playing'
-          ? { color: 'var(--color-primary-6)' }
-          : undefined
-      }
       onClick={handleClick}
     >
       {getLabel()}

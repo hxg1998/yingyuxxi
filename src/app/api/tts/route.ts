@@ -1,19 +1,32 @@
 import { createHash } from 'crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Cache directory in project root — excluded from git via .gitignore
-const CACHE_DIR = join(process.cwd(), '.tts-cache');
+// Cache directory must live in a writable path. On Vercel the project dir
+// (process.cwd() = /var/task) is READ-ONLY — mkdirSync there throws EROFS and
+// crashes the route with a 500. The OS temp dir (/tmp on Vercel) is the only
+// writable location. It's ephemeral (cleared on cold start) so cache hit-rate
+// is lower in serverless, but the endpoint stays functional.
+const CACHE_DIR = join(tmpdir(), 'wordcard-tts-cache');
 
 function getCachedPath(text: string): string {
   const hash = createHash('sha256').update(text).digest('hex');
   return join(CACHE_DIR, `${hash}.mp3`);
 }
 
-function ensureCacheDir() {
-  if (!existsSync(CACHE_DIR)) {
-    mkdirSync(CACHE_DIR, { recursive: true });
+// Returns true if the cache dir is usable. Never throws — if the filesystem
+// is unavailable for any reason, caching is simply skipped (TTS still works).
+function ensureCacheDir(): boolean {
+  try {
+    if (!existsSync(CACHE_DIR)) {
+      mkdirSync(CACHE_DIR, { recursive: true });
+    }
+    return true;
+  } catch (err) {
+    console.warn('[TTS] cache dir unavailable, proceeding without cache:', err);
+    return false;
   }
 }
 
@@ -49,10 +62,10 @@ export async function POST(req: NextRequest) {
 
   const trimmedText = text.trim();
 
-  // Check cache first
-  ensureCacheDir();
+  // Check cache first (skip entirely if the cache dir isn't usable)
+  const cacheAvailable = ensureCacheDir();
   const cachePath = getCachedPath(trimmedText);
-  if (existsSync(cachePath)) {
+  if (cacheAvailable && existsSync(cachePath)) {
     console.log('[TTS] cache hit for:', trimmedText.slice(0, 50));
     const cached = readFileSync(cachePath);
     return new NextResponse(cached, {
@@ -98,13 +111,15 @@ export async function POST(req: NextRequest) {
 
   const audioBuffer = Buffer.from(await upstreamRes.arrayBuffer());
 
-  // Write to cache
-  try {
-    writeFileSync(cachePath, audioBuffer);
-    console.log('[TTS] cached to disk:', cachePath);
-  } catch (cacheErr) {
-    // Non-fatal — still serve the audio
-    console.warn('[TTS] cache write failed:', cacheErr);
+  // Write to cache (only if the dir is usable; non-fatal either way)
+  if (cacheAvailable) {
+    try {
+      writeFileSync(cachePath, audioBuffer);
+      console.log('[TTS] cached to disk:', cachePath);
+    } catch (cacheErr) {
+      // Non-fatal — still serve the audio
+      console.warn('[TTS] cache write failed:', cacheErr);
+    }
   }
 
   return new NextResponse(audioBuffer, {

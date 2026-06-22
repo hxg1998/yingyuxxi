@@ -151,15 +151,7 @@ export default function SpeakButton({ text, size = 'small' }: SpeakButtonProps) 
       type="outline"
       shape="round"
       size={size}
-      icon={
-        speaking ? (
-          <IconLoading />
-        ) : (
-          <span className="speak-button-icon">
-            <IconPlayCircle />
-          </span>
-        )
-      }
+      icon={speaking ? <IconLoading /> : <IconPlayCircle />}
       onClick={handleClick}
     >
       {speaking ? '朗读中' : '点我听'}

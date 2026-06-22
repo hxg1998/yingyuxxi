@@ -138,7 +138,7 @@ export default function AppNav() {
             <Badge
               count={todayDue}
               maxCount={99}
-              style={{ background: 'var(--color-badge-review)' }}
+              color="var(--color-badge-review)"
             >
               <span style={{ paddingRight: todayDue > 0 ? 'var(--spacing-3)' : 0 }}>
                 复习库
@@ -167,7 +167,7 @@ export default function AppNav() {
           <Badge
             count={todayDue}
             maxCount={99}
-            style={{ background: 'var(--color-badge-review)' }}
+            color="var(--color-badge-review)"
           >
             <IconBook style={{ fontSize: 20 }} />
           </Badge>

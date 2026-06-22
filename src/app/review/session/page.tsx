@@ -24,7 +24,9 @@ import {
   Modal,
   Message,
 } from '@arco-design/web-react';
-import { IconClose, IconPlayCircle } from '@arco-design/web-react/icon';
+import { IconClose } from '@arco-design/web-react/icon';
+import RealPronunciationButton from '@/components/shared/RealPronunciationButton';
+import SpeakButton from '@/components/shared/SpeakButton';
 import { getAllCards, getCard, updateCardSRS } from '@/lib/review-store';
 import { ReviewCard } from '@/lib/review-store';
 import { ReviewGrade, applyReview, previewNextInterval, formatInterval, getTodayQueue } from '@/lib/srs';
@@ -52,34 +54,6 @@ function renderReading(readingChinese: string, stressed: string) {
       </span>
     );
   });
-}
-
-// ── TTS helper ────────────────────────────────────────────────────
-async function speak(text: string) {
-  try {
-    const res = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) throw new Error('tts failed');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.onended = () => URL.revokeObjectURL(url);
-    await audio.play();
-  } catch {
-    // Fallback to browser TTS
-    try {
-      if (window.speechSynthesis) {
-        const utt = new SpeechSynthesisUtterance(text);
-        utt.lang = 'en-US';
-        window.speechSynthesis.speak(utt);
-      }
-    } catch {
-      Message.warning({ content: '发音暂时不可用，请稍后重试', duration: 3000 });
-    }
-  }
 }
 
 // ── Session result shape ──────────────────────────────────────────
@@ -348,15 +322,15 @@ function Step1({ card, animKey, onFlip }: Step1Props) {
           </Typography.Text>
         )}
 
-        <Button
-          type="outline"
-          icon={<IconPlayCircle />}
-          size="large"
-          style={{ color: 'var(--color-success-6)', borderColor: 'var(--color-success-6)' }}
-          onClick={() => speak(card.ttsText)}
-        >
-          点我听发音
-        </Button>
+        <Space size={12} wrap style={{ justifyContent: 'center', width: '100%' }}>
+          <SpeakButton text={card.ttsText} size="large" />
+          <RealPronunciationButton
+            key={card.id}
+            word={card.originalText}
+            inputType={card.inputType}
+            size="large"
+          />
+        </Space>
       </Card>
 
       {/* Recall prompt */}
@@ -416,7 +390,7 @@ function Step2({ card, animKey, previews, grading, onGrade }: Step2Props) {
       >
         {/* Header row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-3)' }}>
-          <div>
+          <div style={{ flex: 1, marginRight: 'var(--spacing-2)', wordBreak: 'break-word' }}>
             <Typography.Title
               heading={4}
               style={{ fontSize: 'var(--font-size-title-3)', fontWeight: 'var(--font-weight-semibold)', margin: 0 }}
@@ -429,15 +403,15 @@ function Step2({ card, animKey, previews, grading, onGrade }: Step2Props) {
               </Typography.Text>
             )}
           </div>
-          <Button
-            type="outline"
-            icon={<IconPlayCircle />}
-            size="small"
-            style={{ color: 'var(--color-success-6)', borderColor: 'var(--color-success-6)', flexShrink: 0 }}
-            onClick={() => speak(card.ttsText)}
-          >
-            点我听
-          </Button>
+          <Space size={8} wrap style={{ flexShrink: 0, alignItems: 'center' }}>
+            <SpeakButton text={card.ttsText} size="small" />
+            <RealPronunciationButton
+              key={card.id}
+              word={card.originalText}
+              inputType={card.inputType}
+              size="small"
+            />
+          </Space>
         </div>
 
         <div style={{ borderTop: '1px solid var(--color-border-2)', paddingTop: 'var(--spacing-3)', marginBottom: 'var(--spacing-3)' }}>

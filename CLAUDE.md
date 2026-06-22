@@ -11,13 +11,14 @@
 
 **所有设计 token（`--spacing-*`、`--font-size-*`、`--font-weight-*`、`--shadow-*`、`--color-primary/warning-*` 等）只在一个地方定义：**
 
-👉 [`src/app/globals.css`](src/app/globals.css) 顶部的 `:root {}` 「DESIGN TOKEN LAYER」块。
+👉 [`src/app/globals.css`](src/app/globals.css) 顶部的 `body {}` 「DESIGN TOKEN LAYER」块。
 
 ### 规则
-1. **用 token 前，先确认它已在那个 `:root` 块里定义。** 要用新 token，先去那里加定义，再在组件里用。
+1. **用 token 前，先确认它已在那个 `body` 块里定义。** 要用新 token，先去那里加定义，再在组件里用。
 2. **不要在组件里给 `var(--token)` 写散落的 fallback**（如 `var(--spacing-5, 20px)`）来"绕过"未定义——这会让真正的源头失效、各处数值不一致。要的值不存在就去源头层加。
 3. token 数值以 `DESIGN.md §3` 为权威。间距遵循 4px 网格（4/8/12/16/20/24/28/32/36/40）。
 4. 颜色 token 用 `rgb(var(--primary-N))` 形式组合 Arco 主题包内置的 raw RGB 变量，**不写裸 hex**。
+5. **token 层必须定义在 `body` 选择器上，绝不能用 `:root`。** Arco 主题包（react-abcd2/theme.css）把 raw ramp 变量（`--primary-6`、`--success-6` 等）定义在 `body` 上；CSS 变量只向下继承，定义在 `:root`（= html，body 的父级）的 token **读不到** body 上的变量，`rgb(var(--primary-6))` 会静默解析为空。token 层和它依赖的 ramp 变量必须同在 `body` 作用域。
 
 ### 为什么要这么严（这是踩过的坑）
 CSS 变量**静默失败**：`padding: var(--spacing-5)` 若 `--spacing-5` 未定义，会变成无效值被忽略 → 等于 `padding: 0`。
@@ -26,6 +27,8 @@ CSS 变量**静默失败**：`padding: var(--spacing-5)` 若 `--spacing-5` 未�
 - ESLint 也不管
 
 结果就是「构建全绿、界面全坏」——曾经因为 token 定义层缺失，全站间距塌成 0、核心区块无背景、字号无层级，肉眼走查才发现。**绿色构建 ≠ 样式正确。** 所以 token 必须有唯一、完整的定义源头。
+
+> 2026-06-17 又踩一次同类坑：token 层原本放在 `:root`，但 Arco 颜色原料在 `body`，导致**所有 `--color-*` 颜色 token 静默失效**——凡是显式 `var(--color-primary-6)` 之类的地方颜色全错（发音按钮、导航角标等），而平时大多数颜色走 Arco 组件自带样式所以一直没暴露。改 token 层为 `body` 作用域后修复。教训：派生 token 必须和它依赖的 Arco ramp 变量同作用域。
 
 ---
 

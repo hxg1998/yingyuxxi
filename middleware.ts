@@ -53,7 +53,16 @@ export async function middleware(request: NextRequest) {
   // Trigger session refresh — must be awaited
   // This is intentionally NOT supabase.auth.getSession() because getSession()
   // doesn't validate the token from the server; getUser() does.
-  await supabase.auth.getUser();
+  //
+  // Wrapped in try-catch: if Supabase Auth has a transient network hiccup or
+  // cold-start delay, an unhandled rejection here would crash the middleware
+  // and return a 500 for the ENTIRE site. We must degrade gracefully — skip
+  // the silent session refresh for this request rather than take the site down.
+  try {
+    await supabase.auth.getUser();
+  } catch (err) {
+    console.error('[middleware] Supabase getUser failed, skipping session refresh:', err);
+  }
 
   return response;
 }

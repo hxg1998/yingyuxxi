@@ -23,8 +23,16 @@
      --success-N    → rgb(var(--success-N))   (green ramp)
    These raw ramp vars ARE defined by the theme, so we can
    safely compose them here without hard-coding hex.
+
+   ⚠️ SCOPE: this block MUST be on `body`, NOT `:root`.
+   The Arco theme (react-abcd2/theme.css) defines its raw ramp vars
+   (--primary-6, --success-6, ...) on the `body` selector. CSS custom
+   properties only inherit downward, so a `:root` (html, body's parent)
+   block CANNOT read body's vars — every `rgb(var(--primary-6))` would
+   silently resolve to empty. Defining these tokens on `body` keeps them
+   in the same scope as the ramp vars they compose. (See CLAUDE.md.)
    ========================================================= */
-:root {
+body {
   /* --- Spacing (4-px grid, per DESIGN.md §3.3) --- */
   --spacing-1:  4px;
   --spacing-2:  8px;
@@ -187,10 +195,31 @@ body {
 
 /* =========================================================
    SPEAK BUTTON  (#C10, #F4)
-   Outline style, success-color icon, 44px min touch target.
+   TTS 朗读按钮：整体绿色（边框 + 文字 + 图标）
+   :not(:disabled) 限定范围，保留 Arco 原生 disabled 灰样式。
+   score-btn 系列已用 !important，这里用相同策略保持一致性。
    ========================================================= */
+.speak-button:not(:disabled) {
+  color: var(--color-success-6) !important;
+  border-color: var(--color-success-6) !important;
+}
+
+.speak-button:not(:disabled):hover,
+.speak-button:not(:disabled):focus-visible {
+  color: var(--color-success-6) !important;
+  border-color: var(--color-success-6) !important;
+  background-color: rgb(var(--success-1)) !important;
+}
+
+.speak-button:not(:disabled):active {
+  color: var(--color-success-6) !important;
+  border-color: var(--color-success-6) !important;
+  background-color: rgb(var(--success-2)) !important;
+}
+
+/* 图标色随按钮整体走（继承 color），单独声明供向后兼容 */
 .speak-button-icon {
-  color: var(--color-success-6);
+  color: inherit;
 }
 
 @media (max-width: 767px) {
@@ -199,6 +228,39 @@ body {
     padding-top: 10px;
     padding-bottom: 10px;
   }
+}
+
+/* =========================================================
+   REAL PRONUNCIATION BUTTON  (#DESIGN-real-pronunciation §6)
+   真人发音按钮：整体蓝色（边框 + 文字 + 图标）
+   :not(:disabled) 保留 Arco 原生 disabled 灰样式（disabled-type /
+   disabled-no-audio / error 态的置灰效果由 Arco Button 自带）。
+   loading 态虽传 disabled=true 但视觉应保持蓝色——通过
+   RealPronunciationButton 的 className 条件控制（见组件实现）。
+   ========================================================= */
+.real-pron-button:not(:disabled) {
+  color: var(--color-primary-6) !important;
+  border-color: var(--color-primary-6) !important;
+}
+
+.real-pron-button:not(:disabled):hover,
+.real-pron-button:not(:disabled):focus-visible {
+  color: var(--color-primary-6) !important;
+  border-color: var(--color-primary-6) !important;
+  background-color: rgb(var(--primary-1)) !important;
+}
+
+.real-pron-button:not(:disabled):active {
+  color: var(--color-primary-6) !important;
+  border-color: var(--color-primary-6) !important;
+  background-color: rgb(var(--primary-2)) !important;
+}
+
+/* loading / playing 态：isDisabled=true 但视觉需保蓝色
+   用 .real-pron-button--active 显式标注这两种活跃态 */
+.real-pron-button--active {
+  color: var(--color-primary-6) !important;
+  border-color: var(--color-primary-6) !important;
 }
 
 /* =========================================================
