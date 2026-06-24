@@ -18,6 +18,7 @@ import {
 } from '@arco-design/web-react';
 import { getAllCards } from '@/lib/review-store';
 import { countDueTomorrow, countDueDayAfterTomorrow } from '@/lib/srs';
+import { useAuthStore } from '@/stores/authStore';
 import type { SessionResult } from '../session/page';
 
 const { Row, Col } = Grid;
@@ -25,6 +26,7 @@ const { Row, Col } = Grid;
 function DoneInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const sessionStatus = useAuthStore((s) => s.sessionStatus);
 
   let result: SessionResult = { total: 0, clear: 0, fuzzy: 0, fail: 0 };
   try {
@@ -38,6 +40,9 @@ function DoneInner() {
   const [dayAfterCount, setDayAfterCount] = useState(0);
 
   useEffect(() => {
+    // Wait for auth to resolve before reading cloud data (avoids the
+    // hard-reload race where we'd fetch with no user and show 0 due counts).
+    if (sessionStatus !== 'authenticated') return;
     let cancelled = false;
     getAllCards().then((allCards) => {
       if (cancelled) return;
@@ -47,7 +52,7 @@ function DoneInner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sessionStatus]);
 
   const stats = [
     {

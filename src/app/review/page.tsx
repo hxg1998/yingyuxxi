@@ -36,6 +36,7 @@ import {
 } from '@/lib/review-store';
 import { ReviewCard } from '@/lib/review-store';
 import { countTodayDue, formatDueDate, getTodayQueue, countDueTomorrow } from '@/lib/srs';
+import { useAuthStore } from '@/stores/authStore';
 
 type FilterTab = 'all' | 'due' | 'mastered' | 'hard';
 type SortKey = 'dueDate' | 'createdAt' | 'lastReviewDate' | 'easeFactor';
@@ -50,6 +51,8 @@ export default function ReviewPage() {
   const [searchText, setSearchText] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('dueDate');
 
+  const sessionStatus = useAuthStore((s) => s.sessionStatus);
+
   // ── Load data ──────────────────────────────────────────────────
   const loadCards = useCallback(async () => {
     setLoading(true);
@@ -61,9 +64,25 @@ export default function ReviewPage() {
     }
   }, []);
 
+  // Wait until the auth session is resolved before fetching cloud data.
+  // On a hard page load (refresh / direct URL), the session hydrates
+  // asynchronously. Fetching while sessionStatus === 'loading' would query
+  // with no user_id and render an EMPTY library even though data exists in the
+  // cloud — looking like data loss. Gate on sessionStatus and re-run when it
+  // settles so the list loads (or re-loads) once we know who's logged in.
   useEffect(() => {
+    if (sessionStatus === 'loading') {
+      setLoading(true); // keep the spinner while auth resolves
+      return;
+    }
+    if (sessionStatus === 'unauthenticated') {
+      setCards([]);
+      setLoading(false);
+      return;
+    }
+    // authenticated → safe to fetch the user's cloud cards
     loadCards();
-  }, [loadCards]);
+  }, [sessionStatus, loadCards]);
 
   // ── Derived stats ──────────────────────────────────────────────
   const todayDue = countTodayDue(cards);

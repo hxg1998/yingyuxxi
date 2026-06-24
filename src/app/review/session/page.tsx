@@ -30,6 +30,7 @@ import SpeakButton from '@/components/shared/SpeakButton';
 import { getAllCards, getCard, updateCardSRS } from '@/lib/review-store';
 import { ReviewCard } from '@/lib/review-store';
 import { ReviewGrade, applyReview, previewNextInterval, formatInterval, getTodayQueue } from '@/lib/srs';
+import { useAuthStore } from '@/stores/authStore';
 
 // ── renderReading (copied pattern from PronunciationModule) ───────
 function renderReading(readingChinese: string, stressed: string) {
@@ -69,6 +70,7 @@ function SessionInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const singleId = searchParams.get('id');
+  const sessionStatus = useAuthStore((s) => s.sessionStatus);
 
   const [queue, setQueue] = useState<ReviewCard[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -78,8 +80,16 @@ function SessionInner() {
   const [sessionResult, setSessionResult] = useState<SessionResult>({ total: 0, clear: 0, fuzzy: 0, fail: 0 });
   const [animKey, setAnimKey] = useState(0);
 
-  // Load queue on mount (async — data comes from the cloud)
+  // Load queue on mount (async — data comes from the cloud).
+  // Wait for the auth session to resolve first: on a hard reload the session
+  // hydrates asynchronously, and fetching too early would see an empty queue
+  // and wrongly bounce the user back to /review.
   useEffect(() => {
+    if (sessionStatus === 'loading') return; // wait until auth resolves
+    if (sessionStatus === 'unauthenticated') {
+      router.replace('/review');
+      return;
+    }
     let cancelled = false;
     (async () => {
       let q: ReviewCard[];
@@ -102,7 +112,7 @@ function SessionInner() {
       cancelled = true;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sessionStatus]);
 
   const currentCard = queue[currentIdx] ?? null;
   const totalCount = queue.length;
